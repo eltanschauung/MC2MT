@@ -1,3 +1,7 @@
+# Why fork this?
+
+The fork was made to fix conversion failures on real-world Minecraft map data by making MC2MT tolerate missing chunk/section NBT arrays (Blocks, Data, SkyLight, BlockLight) instead of crashing, zero-filling missing data and continuing (with a warning for missing Blocks). It also adds missing NBT LongArray support and corrects an IntArray serialized-size bug (using 32-bit length sizing), which improves compatibility with newer Minecraft-format data and prevents parsing/serialization errors.
+
 # MC2MT
 Converts a Minecraft world into a Luanti world. Compared to the `mcimport` tool written in Python it is **very fast**, and also allows for multhreading the workflow making it even faster.
 
