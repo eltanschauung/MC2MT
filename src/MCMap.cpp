@@ -223,6 +223,19 @@ MCBlock::MCBlock(const NBT::Tag & chunk, MCChunkPos cp,
 // Short for GET_NBT_RAW_BYTE_ARRAY
 #define GNBTRBA(val) reinterpret_cast<const uint8_t *>((val).as<const NBT::ByteArray>().value)
 
+static const uint8_t *findByteArray(const NBT::Compound &comp, const char *name)
+{
+	auto it = comp.find(name);
+	if (it == comp.end())
+		return nullptr;
+	return GNBTRBA(it->second);
+}
+
+static inline void zeroBytes(void *dst, size_t size)
+{
+	memset(dst, 0, size);
+}
+
 void MCBlock::fromSection(const NBT::Tag & section)
 {
 	/* Anvil format is YZX ((y * 16 + z) * 16 + x).
@@ -235,7 +248,14 @@ void MCBlock::fromSection(const NBT::Tag & section)
 	 */
 	const NBT::Compound & sec = section;
 
-	reverseXAxis(blocks, GNBTRBA(sec.at("Blocks")));
+	const uint8_t *blocks_ptr = findByteArray(sec, "Blocks");
+	if (!blocks_ptr) {
+		std::cerr << "WARNING: Missing Blocks array in Anvil section at "
+			<< pos.x << "," << pos.y << "," << pos.z << std::endl;
+		zeroBytes(blocks, sizeof(blocks));
+		return;
+	}
+	reverseXAxis(blocks, blocks_ptr);
 
 	// "Add" array is optional
 	auto it = sec.find("Add");
@@ -249,18 +269,46 @@ void MCBlock::fromSection(const NBT::Tag & section)
 	}
 
 	// Data, sky light, and block light are 4-bit
-	expandHalfBytes(data,        GNBTRBA(sec.at("Data")));
-	expandHalfBytes(sky_light,   GNBTRBA(sec.at("SkyLight")));
-	expandHalfBytes(block_light, GNBTRBA(sec.at("BlockLight")));
+	if (const uint8_t *data_ptr = findByteArray(sec, "Data"))
+		expandHalfBytes(data, data_ptr);
+	else
+		zeroBytes(data, sizeof(data));
+
+	if (const uint8_t *sky_ptr = findByteArray(sec, "SkyLight"))
+		expandHalfBytes(sky_light, sky_ptr);
+	else
+		zeroBytes(sky_light, sizeof(sky_light));
+
+	if (const uint8_t *block_ptr = findByteArray(sec, "BlockLight"))
+		expandHalfBytes(block_light, block_ptr);
+	else
+		zeroBytes(block_light, sizeof(block_light));
 }
 
 
 void MCBlock::fromChunk(const NBT::Tag & chunk, uint8_t y_slice)
 {
-	extractSlice         (blocks,      GNBTRBA(chunk["Blocks"]),     y_slice);
-	extractSliceHalfBytes(data,        GNBTRBA(chunk["Data"]),       y_slice);
-	extractSliceHalfBytes(sky_light,   GNBTRBA(chunk["SkyLight"]),   y_slice);
-	extractSliceHalfBytes(block_light, GNBTRBA(chunk["BlockLight"]), y_slice);
+	const NBT::Compound &comp = chunk;
+
+	if (const uint8_t *blocks_ptr = findByteArray(comp, "Blocks"))
+		extractSlice(blocks, blocks_ptr, y_slice);
+	else
+		zeroBytes(blocks, sizeof(blocks));
+
+	if (const uint8_t *data_ptr = findByteArray(comp, "Data"))
+		extractSliceHalfBytes(data, data_ptr, y_slice);
+	else
+		zeroBytes(data, sizeof(data));
+
+	if (const uint8_t *sky_ptr = findByteArray(comp, "SkyLight"))
+		extractSliceHalfBytes(sky_light, sky_ptr, y_slice);
+	else
+		zeroBytes(sky_light, sizeof(sky_light));
+
+	if (const uint8_t *block_ptr = findByteArray(comp, "BlockLight"))
+		extractSliceHalfBytes(block_light, block_ptr, y_slice);
+	else
+		zeroBytes(block_light, sizeof(block_light));
 }
 
 

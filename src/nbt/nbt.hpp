@@ -50,6 +50,7 @@ enum class TagType : UByte {
 	List,
 	Compound,
 	IntArray,
+	LongArray,
 };
 
 struct ByteArray {
@@ -75,6 +76,11 @@ struct IntArray {
 	Int *value;
 };
 
+struct LongArray {
+	UInt size;
+	Long *value;
+};
+
 union Value {
 	Byte      v_byte;
 	Short     v_short;
@@ -87,6 +93,7 @@ union Value {
 	List      v_list;
 	Compound *v_compound;
 	IntArray  v_int_array;
+	LongArray v_long_array;
 };
 
 class Tag {
@@ -123,6 +130,7 @@ public:
 
 	Tag & operator += (const Byte &t);
 	Tag & operator += (const Int &t);
+	Tag & operator += (const Long &t);
 	Tag & operator += (const Tag &t);
 	Tag & operator += (Tag &&t);
 
@@ -137,6 +145,7 @@ public:
 	operator List      () const { assert(type == TagType::List);      return value.v_list; }
 	operator Compound& () const { assert(type == TagType::Compound);  return *value.v_compound; }
 	operator IntArray  () const { assert(type == TagType::IntArray);  return value.v_int_array; }
+	operator LongArray () const { assert(type == TagType::LongArray); return value.v_long_array; }
 
 	operator std::string () const {
 		assert(type == TagType::String);
@@ -157,6 +166,7 @@ public:
 
 	void insert(const Int k, const Byte b);
 	void insert(const Int k, const Int i);
+	void insert(const Int k, const Long l);
 	void insert(const Int k, const Tag &t);
 	void insert(const std::string &k, const Tag &t);
 
@@ -178,4 +188,3 @@ protected:
 } // namespace NBT
 
 #endif
-

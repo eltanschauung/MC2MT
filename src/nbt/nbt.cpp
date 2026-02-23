@@ -98,6 +98,14 @@ Tag & Tag::operator += (const Int &i)
 	return *this;
 }
 
+Tag & Tag::operator += (const Long &l)
+{
+	assert(type == TagType::LongArray);
+	ensureSize<LongArray, Long>(&value.v_long_array, value.v_long_array.size + 1);
+	value.v_long_array.value[value.v_long_array.size - 1] = l;
+	return *this;
+}
+
 Tag & Tag::operator += (const Tag &t)
 {
 	assert(type == TagType::List);
@@ -144,6 +152,10 @@ void Tag::setTag(const TagType tag, UInt size, TagType subtype)
 	case TagType::IntArray:
 		value.v_int_array.size = size;
 		if (size) value.v_int_array.value = new Int[size];
+		break;
+	case TagType::LongArray:
+		value.v_long_array.size = size;
+		if (size) value.v_long_array.value = new Long[size];
 		break;
 	default:
 		memset((void*) &value, 0, sizeof(value));
@@ -194,6 +206,14 @@ void Tag::copy(const Tag &t)
 		memcpy((void*) value.v_int_array.value,
 				(void*) t.value.v_int_array.value, size * sizeof(Int));
 		break;
+	case TagType::LongArray:
+		size = t.value.v_long_array.size;
+		value.v_long_array.size = size;
+		if (!size) break;
+		value.v_long_array.value = new Long[size];
+		memcpy((void*) value.v_long_array.value,
+				(void*) t.value.v_long_array.value, size * sizeof(Long));
+		break;
 	default:
 		value = t.value;
 	}
@@ -221,6 +241,10 @@ void Tag::free()
 	case TagType::IntArray:
 		if (value.v_int_array.size)
 			delete [] value.v_int_array.value;
+		break;
+	case TagType::LongArray:
+		if (value.v_long_array.size)
+			delete [] value.v_long_array.value;
 		break;
 	default:
 		break;
@@ -268,6 +292,14 @@ void Tag::insert(const Int k, const Int i)
 	value.v_int_array.value[ak] = i;
 }
 
+void Tag::insert(const Int k, const Long l)
+{
+	assert(type == TagType::LongArray);
+	UInt ak = TOABS(k, value.v_list.size);
+	ensureSize<LongArray, Long>(&value.v_long_array, ak + 1);
+	value.v_long_array.value[ak] = l;
+}
+
 
 void Tag::insert(const Int k, const Tag &t)
 {
@@ -290,4 +322,3 @@ void Tag::insert(const std::string &k, const Tag &t)
 }
 
 } // namespace NBT
-
